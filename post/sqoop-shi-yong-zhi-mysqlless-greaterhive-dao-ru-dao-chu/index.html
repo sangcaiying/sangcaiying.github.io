@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-<link rel="shortcut icon" href="https://sangcaiying.github.io/favicon.ico?v=1598526185083">
+<link rel="shortcut icon" href="https://sangcaiying.github.io/favicon.ico?v=1598526442300">
 <link rel="stylesheet" href="https://sangcaiying.github.io/styles/main.css">
 
 
@@ -31,7 +31,7 @@ bin/sqoop list-databases -connect jdbc:mysql://172.23.16.77:3306/my..." />
   <div class="top-container" data-aos="fade-right">
     <div class="top-header-container">
       <a class="site-title-container" href="https://sangcaiying.github.io">
-        <img src="https://sangcaiying.github.io/images/avatar.png?v=1598526185083" class="site-logo">
+        <img src="https://sangcaiying.github.io/images/avatar.png?v=1598526442300" class="site-logo">
         <h1 class="site-title">Daria&#39;s home</h1>
       </a>
       <div class="menu-btn" @click="menuVisible = !menuVisible">
@@ -171,7 +171,7 @@ bin/sqoop list-databases -connect jdbc:mysql://172.23.16.77:3306/my..." />
 <code>--hive-database default \</code><br>
 <code>--hive-table hive_movies_snappy</code></p>
 <p>报错：</p>
-<figure data-type="image" tabindex="1"><img src="C:%5CUsers%5CSangNi%5CAppData%5CRoaming%5CTypora%5Ctypora-user-images%5Cimage-20200811130147497.png" alt="image-20200811130147497" loading="lazy"></figure>
+<figure data-type="image" tabindex="1"><img src="https://sangcaiying.github.io/post-images/1598526433520.png" alt="" loading="lazy"></figure>
 <h4 id="2sqoop从hive导入mysql会出现乱码且数据行数不一致">2.sqoop从hive导入mysql，会出现乱码且数据行数不一致</h4>
 <p>导入定义字符集后并没有解决：</p>
 <p><code>sqoop export --connect jdbc:mysql://172.23.16.77:3306/mysql?useUnicode=true&amp;characterEncoding=utf-8 --username root --password root --table bbs_product_from_hive --fields-terminated-by ',' --export-dir hdfs://hdspdemo008.hand-china.com:8020/warehouse/tablespace/managed/hive/hive_bbs_product_snappy/delta_0000001_0000001_0000</code></p>
