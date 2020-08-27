@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>大数据背景以及Hdp生态圈组件介绍 | Daria&#39;s home</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://sangcaiying.github.io/favicon.ico?v=1598526185083">
+<link rel="stylesheet" href="https://sangcaiying.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="一.大数据应用场景
+
+物流仓储：大数据分析系统助力商家精细化运营、提升销量、节约成本
+零售：分析用户消费习惯，为用户购买商品提供方便，从而提升商品销量
+旅游：结合大数据能力与旅游行业需求，共建旅游行业智慧管理、智慧服务、智慧营销
+商品推荐：..." />
+    <meta name="keywords" content="" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://sangcaiying.github.io">
+        <img src="https://sangcaiying.github.io/images/avatar.png?v=1598526185083" class="site-logo">
+        <h1 class="site-title">Daria&#39;s home</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      温故而知新
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://sangcaiying.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">大数据背景以及Hdp生态圈组件介绍</h2>
+            <div class="post-date">2020-08-27</div>
+            
+            <div class="post-content" v-pre>
+              <h3 id="一大数据应用场景">一.大数据应用场景</h3>
+<ul>
+<li>物流仓储：大数据分析系统助力商家精细化运营、提升销量、节约成本</li>
+<li>零售：分析用户消费习惯，为用户购买商品提供方便，从而提升商品销量</li>
+<li>旅游：结合大数据能力与旅游行业需求，共建旅游行业智慧管理、智慧服务、智慧营销</li>
+<li>商品推荐：根据用户消费喜好推荐商品</li>
+<li>保险：数据挖掘、风险预测，助力行业精准营销、细化定价</li>
+<li>金融：多维度体现用户特征，帮助机构推荐优质客户，规避风险</li>
+<li>房产：助力精准投策，选出更合适的地，建造更合适的楼，卖给更合适的人</li>
+</ul>
+<h3 id="二关于hdp">二.关于Hdp</h3>
+<p>它由Apache基金会开发的分布式系统基础架构，主要解决海量数据的存储和海量数据的分析计算问题。</p>
+<h4 id="hdp的优势">Hdp的优势</h4>
+<ul>
+<li>高可靠性：Hdp底层维护多个数据副本，即使Hdp某个计算元素或存储出现故障，也不会丢失数据</li>
+<li>高扩展性：在集群间分配任务数据，可方便的扩展数以千计的节点</li>
+<li>高效性：在MapReduce的思想下，Hadoop并行工作以加快任务处理速度</li>
+<li>高容错性：能自动将失败的任务重新分配</li>
+</ul>
+<h3 id="三hdp生态圈组件">三.Hdp生态圈组件</h3>
+<figure data-type="image" tabindex="1"><img src="C:%5CUsers%5C26632%5CPictures%5C%E5%A4%A7%E6%95%B0%E6%8D%AE%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84.png" alt="大数据技术架构" loading="lazy"></figure>
+<h4 id="1hdfs">1.HDFS</h4>
+<p>HDFS（Hadoop Distributed File System）是hadoop项目的核心子项目，是分布式计算中数据存储管理的基础。是基于流数据模式访问和处理超大文件的需求而开发的， 可以运行于廉价的商用服务器上。</p>
+<p>HDFS是开源的，存储着Hadoop应用将要处理的数据，类似于普通的Unix和linux文件系统，不同的是它是实现了google的GFS文件系统的思想，是适用于大规模分布式数据处理相关应用的、可扩展的分布式文件系统。</p>
+<ul>
+<li>
+<p><strong>HDFS主要组件</strong></p>
+<p>NameNode：存储文件的元数据，如文件名、文件结构目录、文件属性以及每个文件的块列表和块所在的DataNode</p>
+<p>DataNode：在本地文件系统存储文件块数据，以及块数据的校验和</p>
+<p>Secondary NameNode：用来监控HDFS状态的辅助后台程序，每个一段时间获取HDFS元数据的快照</p>
+</li>
+<li>
+<p><strong>HDFS优点</strong></p>
+<p>处理超大文件</p>
+<p>流式数据访问</p>
+<p>运行于廉价的商用集群上</p>
+</li>
+<li>
+<p><strong>HDFS缺点</strong></p>
+<p>不适合低延迟的数据访问</p>
+<p>无法高效存储大量小文件</p>
+<p>不支持多用户写入及随意修改</p>
+</li>
+</ul>
+<h4 id="2mapreduce">2.MapReduce</h4>
+<p>MapReduce是一个分布式运行程序的编程框架，它的核心功能是将用户编写的业务逻辑代码和自带默认组件整合成一个完整的分布式运行程序，并运行在一个HDP集群上。</p>
+<ul>
+<li>
+<p><strong>MapReduce核心编程思想</strong></p>
+<p>MapReduce编程模型只能包含一个Map阶段和一个Reduce阶段，若业务逻辑非常复杂，就只能多个MapReduce程序，串行运行。</p>
+<p>第一个阶段MapTask并发实例，完全并行运行，互不相干。</p>
+<p>第二个阶段的ReduceTask并发实例也互不相干，但是数据依赖于上一个阶段的所有MapTask并发实例的输出。</p>
+</li>
+<li>
+<p><strong>MapReduce进程</strong></p>
+<p>一个完整的MapReduce程序在分布式运行时有三类实例进程：</p>
+<p>MrAppMaster：负责整个程序的过程调度及状态协调</p>
+<p>MapTask：负责Map阶段的整个数据处理流程</p>
+<p>ReduceTask：负责Reduce阶段的整个处理流程</p>
+</li>
+<li>
+<p><strong>优点</strong></p>
+<p>易于编程：简单的实现一些接口，就可以完成一个分布式程序</p>
+<p>良好扩展性：可以通过简单的加机器扩展它的计算能力</p>
+<p>高容错性：若其中一台机器宕机，Hadoop内部会自动将任务转移到另一台机器上</p>
+<p>适合PB级别海量数据离线处理：上千台集群并发工作，提供数据处理能力</p>
+</li>
+<li>
+<p><strong>缺点</strong></p>
+<p>不擅长实时计算：无法在毫秒或秒级别内返回结果</p>
+<p>不擅长流式计算：MapReduce自身的设计特点决定了数据源必须时静态的，而流式计算的输入数据时动态的</p>
+<p>不擅长DAG(有向图)计算：多个应用程序存在依赖关系，后一个应用程序的输入为前一个的输出。这种情况下，每个MapReduce的输出结果都会写入磁盘，会造成大量的磁盘IO，导致性能非常底下。</p>
+</li>
+</ul>
+<h4 id="3yarn">3.Yarn</h4>
+<p>Yarn是HDP集群的资源管理系统，主要组件如下：</p>
+<p>ResourceManager：处理客户端请求，监控NodeManager，启动或监控ApplicationMaster，分配调度资源</p>
+<p>NodeManager：管理单个节点的资源，处理来自ResourceManager和AplicationMaster的命令</p>
+<p>ApplicationMaster：负责数据的切分，为应用程序申请资源并分配给内部任务，任务的监控与容错</p>
+<p>Container：它是YARN中的资源抽象，封装了某个节点上的多维度资源，如内存、CPU、磁盘、网络等</p>
+<p>4.Hive</p>
+<p>5.HBase</p>
+<p>6.Impala</p>
+<p>7.Sqoop</p>
+<h1 id="用于换行binsqoop-import">\ 用于换行bin/sqoop import \</h1>
+<p>--connect jdbc:mysql://127.0.0.1:3306/mysql \　　#连接数据库<br>
+--username root \　　#用户名<br>
+--password root \　　#密码<br>
+--query 'select id, product_name, product_code from bbs_product  ' \　　#选取表的字段信息<br>
+--target-dir /data/base \　　#上传到Hdfs的目录<br>
+--delete-target-dir \　　#如果指定文件目录存在则先删除掉<br>
+--num-mappers 1 \　　#使用1个map并行任务<br>
+--compress \　　#启动压缩<br>
+--compression-codec org.apache.hadoop.io.compress.SnappyCodec \　　#指定hadoop的codec方式 默认为gzip<br>
+--direct \　　#使用直接导入方式，优化导入速度<br>
+--fields-terminated-by '\t'　　#字段之间通过空格分隔</p>
+<p>bin/sqoop import \</p>
+<p>--connect jdbc:mysql://127.0.0.1:3306/mysql <br>
+--username root <br>
+--password root <br>
+--query 'select id, product_name, product_code from bbs_product  ' <br>
+--target-dir /data/base <br>
+--delete-target-dir <br>
+--num-mappers 1 <br>
+--compress <br>
+--compression-codec org.apache.hadoop.io.compress.SnappyCodec <br>
+--direct \</p>
+<p>--fields-terminated-by '\t'</p>
+<p>8.Flume</p>
+<p>9.Kafka</p>
+<p>10.ZooKeeper</p>
+<p>11.Pig</p>
+<p>12.Spark</p>
+<p>13.Storm</p>
+<p>14.Flink</p>
+<p>15.Tez</p>
+<p>16.Phoenix</p>
+<p>17.Kylin</p>
+<p>18.ES</p>
+<p>19.Thrift</p>
+<p>20.Azkaban</p>
+<p>21.Ambari</p>
+
+            </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://sangcaiying.github.io/post/shu-ju-jian-mo-xiang-guan-gai-nian-ji-fang-fa-lun/">
+                  <h3 class="post-title">
+                    数据建模相关概念及方法论
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>

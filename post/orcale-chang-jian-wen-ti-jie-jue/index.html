@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Orcale常见问题解决 | Daria&#39;s home</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://sangcaiying.github.io/favicon.ico?v=1598526185083">
+<link rel="stylesheet" href="https://sangcaiying.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="一、表被锁住解决办法
+1、查看数据库锁,诊断锁的来源及类型：
+SELECT OBJECT_ID, SESSION_ID, LOCKED_MODE FROM V$LOCKED_OBJECT;
+2、找出数据库的serial#,以备杀死：
+SEL..." />
+    <meta name="keywords" content="" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://sangcaiying.github.io">
+        <img src="https://sangcaiying.github.io/images/avatar.png?v=1598526185083" class="site-logo">
+        <h1 class="site-title">Daria&#39;s home</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      温故而知新
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://sangcaiying.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Orcale常见问题解决</h2>
+            <div class="post-date">2020-08-27</div>
+            
+            <div class="post-content" v-pre>
+              <p>一、表被锁住解决办法<br>
+1、查看数据库锁,诊断锁的来源及类型：<br>
+<code>SELECT OBJECT_ID, SESSION_ID, LOCKED_MODE FROM V$LOCKED_OBJECT;</code></p>
+<p>2、找出数据库的serial#,以备杀死：<br>
+<code>SELECT T2.USERNAME, T2.SID, T2.SERIAL#, T2.LOGON_TIME</code><br>
+<code>FROM V$LOCKED_OBJECT T1, V$SESSION T2</code><br>
+<code>WHERE T1.SESSION_ID = T2.SID</code><br>
+<code>ORDER BY T2.LOGON_TIME;</code></p>
+<p>3、杀死该session<br>
+<code>alter system kill session 'sid,serial#' ps: sid ,serial#</code> --为步骤2中查出来的值</p>
+<p>二、程序包被锁住解决办法</p>
+<p>在Oracle中还有一种DDL锁，主要用来保证存储过程、表结构、视图、包等数据库对象的完整性，这种锁的信息可以在DBA_DDL_LOCKS中查到。V$LOCKED_OBJECT记录的是DML锁信息，DDL锁的信息不在里面。对应DDL锁的是DDL语句，DDL语句全称数据定义语句（Data Define Language）。用于定义数据的结构或Schema，如：CREATE、ALTER、DROP、TRUNCATE、COMMENT、RENAME。当我们在执行某个存储过程、或者编译它的时候Oracle会自动给这个对象加上DDL锁，同时也会对这个存储过程所引用的对象加锁。</p>
+<p>如果我们打开一个PL/SQL窗口调试某个函数，保持在调试状态，同时打开另一个PL/SQL窗口编译同一个函数，发现此时已经无法响应了，这种情况就是程序包被锁住了。</p>
+<p>1、首先查出哪些进程锁住了这个对象，语句如下：</p>
+<p><code>Select b.SID,b.SERIAL#</code></p>
+<p><code>From dba_ddl_locks a, v$session b</code></p>
+<p><code>Where a.session_id= b.SID</code></p>
+<p><code>And a.name ='FUN_CORE_SERVICECALL';</code></p>
+<p>2、执行如下语句杀进程：<code>alter system kill session 'sid,serial#'</code></p>
+<p>3、执行了以上的语句后，有的时候不一定能够将进程杀掉。这个时候就需要连到数据库服务器上杀掉服务器端的进程了，查询语句：</p>
+<p><code>Select spid, osuser, s.program</code></p>
+<p><code>From v$session s, v$process p</code></p>
+<p><code>Where s.paddr= p.addr</code></p>
+<p><code>And s.sid =（上面查出来的SID）</code></p>
+<p>三、将某张表的数据恢复至某个时刻</p>
+<p>使用flashback table功能时，需要首先打开row mvoement的选项</p>
+<p><code>alter table HCS_DIM_ACCOUNT enable row movement;</code><br>
+<code>flashback table HCS_DIM_ACCOUNT to timestamp to_timestamp('2020-04-28 10:26:00','yyyy-mm-dd hh24:mi:ss');</code></p>
+<p>四、将数字转成字符前面有空格的情况<br>
+to_char函数数字转成字符时前面会有空格，fm去掉前后空格和0<br>
+<code>SELECT TO_CHAR(D.AMOUNT,'fm990.9999') FROM DUAL;</code></p>
+
+            </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://sangcaiying.github.io/post/sqoop-shi-yong-zhi-mysqlless-greaterhive-dao-ru-dao-chu/">
+                  <h3 class="post-title">
+                    sqoop使用之mysql&lt;-&gt;hive导入导出
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>

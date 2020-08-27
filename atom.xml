@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://sangcaiying.github.io</id>
     <title>Daria&apos;s home</title>
-    <updated>2020-07-23T16:58:44.191Z</updated>
+    <updated>2020-08-27T11:04:07.524Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://sangcaiying.github.io"/>
     <link rel="self" href="https://sangcaiying.github.io/atom.xml"/>
@@ -11,35 +11,745 @@
     <icon>https://sangcaiying.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, Daria&apos;s home</rights>
     <entry>
-        <title type="html"><![CDATA[Hello Gridea]]></title>
-        <id>https://sangcaiying.github.io/post/hello-gridea/</id>
-        <link href="https://sangcaiying.github.io/post/hello-gridea/">
+        <title type="html"><![CDATA[Orcale常见问题解决]]></title>
+        <id>https://sangcaiying.github.io/post/orcale-chang-jian-wen-ti-jie-jue/</id>
+        <link href="https://sangcaiying.github.io/post/orcale-chang-jian-wen-ti-jie-jue/">
         </link>
-        <updated>2018-12-11T16:00:00.000Z</updated>
-        <summary type="html"><![CDATA[<p>👏  欢迎使用 <strong>Gridea</strong> ！<br>
-✍️  <strong>Gridea</strong> 一个静态博客写作客户端。你可以用它来记录你的生活、心情、知识、笔记、创意... ...</p>
+        <updated>2020-08-27T11:02:42.000Z</updated>
+        <content type="html"><![CDATA[<p>一、表被锁住解决办法<br>
+1、查看数据库锁,诊断锁的来源及类型：<br>
+<code>SELECT OBJECT_ID, SESSION_ID, LOCKED_MODE FROM V$LOCKED_OBJECT;</code></p>
+<p>2、找出数据库的serial#,以备杀死：<br>
+<code>SELECT T2.USERNAME, T2.SID, T2.SERIAL#, T2.LOGON_TIME</code><br>
+<code>FROM V$LOCKED_OBJECT T1, V$SESSION T2</code><br>
+<code>WHERE T1.SESSION_ID = T2.SID</code><br>
+<code>ORDER BY T2.LOGON_TIME;</code></p>
+<p>3、杀死该session<br>
+<code>alter system kill session 'sid,serial#' ps: sid ,serial#</code> --为步骤2中查出来的值</p>
+<p>二、程序包被锁住解决办法</p>
+<p>在Oracle中还有一种DDL锁，主要用来保证存储过程、表结构、视图、包等数据库对象的完整性，这种锁的信息可以在DBA_DDL_LOCKS中查到。V$LOCKED_OBJECT记录的是DML锁信息，DDL锁的信息不在里面。对应DDL锁的是DDL语句，DDL语句全称数据定义语句（Data Define Language）。用于定义数据的结构或Schema，如：CREATE、ALTER、DROP、TRUNCATE、COMMENT、RENAME。当我们在执行某个存储过程、或者编译它的时候Oracle会自动给这个对象加上DDL锁，同时也会对这个存储过程所引用的对象加锁。</p>
+<p>如果我们打开一个PL/SQL窗口调试某个函数，保持在调试状态，同时打开另一个PL/SQL窗口编译同一个函数，发现此时已经无法响应了，这种情况就是程序包被锁住了。</p>
+<p>1、首先查出哪些进程锁住了这个对象，语句如下：</p>
+<p><code>Select b.SID,b.SERIAL#</code></p>
+<p><code>From dba_ddl_locks a, v$session b</code></p>
+<p><code>Where a.session_id= b.SID</code></p>
+<p><code>And a.name ='FUN_CORE_SERVICECALL';</code></p>
+<p>2、执行如下语句杀进程：<code>alter system kill session 'sid,serial#'</code></p>
+<p>3、执行了以上的语句后，有的时候不一定能够将进程杀掉。这个时候就需要连到数据库服务器上杀掉服务器端的进程了，查询语句：</p>
+<p><code>Select spid, osuser, s.program</code></p>
+<p><code>From v$session s, v$process p</code></p>
+<p><code>Where s.paddr= p.addr</code></p>
+<p><code>And s.sid =（上面查出来的SID）</code></p>
+<p>三、将某张表的数据恢复至某个时刻</p>
+<p>使用flashback table功能时，需要首先打开row mvoement的选项</p>
+<p><code>alter table HCS_DIM_ACCOUNT enable row movement;</code><br>
+<code>flashback table HCS_DIM_ACCOUNT to timestamp to_timestamp('2020-04-28 10:26:00','yyyy-mm-dd hh24:mi:ss');</code></p>
+<p>四、将数字转成字符前面有空格的情况<br>
+to_char函数数字转成字符时前面会有空格，fm去掉前后空格和0<br>
+<code>SELECT TO_CHAR(D.AMOUNT,'fm990.9999') FROM DUAL;</code></p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[sqoop使用之mysql<->hive导入导出]]></title>
+        <id>https://sangcaiying.github.io/post/sqoop-shi-yong-zhi-mysqlless-greaterhive-dao-ru-dao-chu/</id>
+        <link href="https://sangcaiying.github.io/post/sqoop-shi-yong-zhi-mysqlless-greaterhive-dao-ru-dao-chu/">
+        </link>
+        <updated>2020-08-27T11:02:12.000Z</updated>
+        <content type="html"><![CDATA[<h4 id="一将mysql数据导入到hive">一.将mysql数据导入到hive</h4>
+<h5 id="1sqoop测试连接数据库">1.sqoop测试连接数据库</h5>
+<p><code>cd /usr/local/sqoop</code></p>
+<p><code>bin/sqoop list-databases -connect jdbc:mysql://172.23.16.77:3306/mysql --username root --password root</code></p>
+<h4 id="2在hdfs上创建目录用于存放数据">2.在hdfs上创建目录，用于存放数据</h4>
+<p><code>hadoop fs -mkdir -p /data/base</code></p>
+<h4 id="3mysql导入hdfs">3.mysql导入hdfs</h4>
+<p><code>bin/sqoop import \</code><br>
+<code>--connect jdbc:mysql://172.23.16.77:3306/mysql \</code><br>
+<code>--username root \</code><br>
+<code>--password root \</code><br>
+<code>--query 'select id, product_name, product_code from bbs_product where $CONDITIONS limit 100' \</code><br>
+<code>--target-dir /data/base \</code><br>
+<code>--delete-target-dir \</code><br>
+<code>--num-mappers 1 \</code><br>
+<code>--compress \</code><br>
+<code>--compression-codec org.apache.hadoop.io.compress.SnappyCodec \</code><br>
+<code>--direct \</code><br>
+<code>--fields-terminated-by ','</code></p>
+<h4 id="4查看并展示目录内容">4.查看并展示目录内容</h4>
+<p><code>hadoop fs -ls -R /data/base</code></p>
+<p><code>hadoop fs -text /data/base/part-m-00000.snappy</code></p>
+<h4 id="5在hive下建表">5.在hive下建表</h4>
+<p><code>create table default.hive_bbs_product_snappy(</code><br>
+<code>id int,</code><br>
+<code>product_name string,</code><br>
+<code>product_code string</code><br>
+<code>)</code><br>
+<code>ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' ;</code></p>
+<h4 id="6从hdfs导入hive">6.从hdfs导入hive</h4>
+<p><code>load data inpath '/data/base/part-m-00000.snappy' into table default.hive_bbs_product_snappy;</code></p>
+<p>遇到错误：</p>
+<h4 id="semanticexception-unable-to-load-data-to-destination-table-error-the-file-that-you-are-trying-to-load-does-not-match-the-file-format-of-the-destination-table错误">SemanticException Unable to load data to destination table. Error: The file that you are trying to load does not match the file format of the destination table.错误</h4>
+<p>解决办法：</p>
+<p>mysql导入hdfs存储为textfile：</p>
+<p><code>bin/sqoop import \</code><br>
+<code>--connect jdbc:mysql://172.23.16.77:3306/mysql \</code><br>
+<code>--username root \</code><br>
+<code>--password root \</code><br>
+<code>--query 'select id, product_name, product_code from bbs_product where $CONDITIONS limit 100' \</code><br>
+<code>--target-dir /data/base \</code><br>
+<code>--delete-target-dir \</code><br>
+<code>--num-mappers 1 \</code><br>
+<code>--as-textfile</code><br>
+<code>--direct \</code><br>
+<code>--fields-terminated-by ','</code></p>
+<p>在hive建表存储为文本格式：</p>
+<p><code>create table hive_bbs_test(id int,product_name string,product_code string) row format delimited fields terminated by ',' stored as textfile ;</code></p>
+<p>加载数据：</p>
+<p><code>load data inpath '/data/base/part-m-00000' into table default.hive_bbs_test;</code></p>
+<p>插入目标表：</p>
+<p><code>insert into default.hive_bbs_product_snappy select * from default.hive_bbs_test;</code></p>
+<h3 id="二从hive导入mysql">二.从HIVE导入mysql</h3>
+<h4 id="1运行hive命令查询hive表存储位置">1.运行hive命令，查询hive表存储位置</h4>
+<p><code>describe extended hive_bbs_test;</code></p>
+<h4 id="2在mysql创建表">2.在mysql创建表</h4>
+<h4 id="3执行sqoop命令">3.执行sqoop命令</h4>
+<pre><code>sqoop export --connect &quot;jdbc:mysql://172.23.16.77:3306/mysql?useUnicode=true&amp;characterEncoding=utf-8&quot; --username root --password root --table bbs_product_from_hive --fields-terminated-by ',' --export-dir hdfs://hdspdemo008.hand-china.com:8020/warehouse/tablespace/managed/hive/hive_bbs_product_snappy/delta_0000001_0000001_0000
+</code></pre>
+<h3 id="三未解决问题">三.未解决问题</h3>
+<h4 id="1直接执行sqoop从mysql到hive的命令会报错">1.直接执行sqoop从mysql到hive的命令，会报错</h4>
+<p>命令:</p>
+<p><code>bin/sqoop import \</code><br>
+<code>--connect jdbc:mysql://172.23.16.77:3306/demo \</code><br>
+<code>--username root \</code><br>
+<code>--password root \</code><br>
+<code>--table movies \</code><br>
+<code>--fields-terminated-by ',' \</code><br>
+<code>--delete-target-dir \</code><br>
+<code>--num-mappers 1 \</code><br>
+<code>--hive-import \</code><br>
+<code>--hive-database default \</code><br>
+<code>--hive-table hive_movies_snappy</code></p>
+<p>报错：</p>
+<figure data-type="image" tabindex="1"><img src="C:%5CUsers%5CSangNi%5CAppData%5CRoaming%5CTypora%5Ctypora-user-images%5Cimage-20200811130147497.png" alt="image-20200811130147497" loading="lazy"></figure>
+<h4 id="2sqoop从hive导入mysql会出现乱码且数据行数不一致">2.sqoop从hive导入mysql，会出现乱码且数据行数不一致</h4>
+<p>导入定义字符集后并没有解决：</p>
+<p><code>sqoop export --connect jdbc:mysql://172.23.16.77:3306/mysql?useUnicode=true&amp;characterEncoding=utf-8 --username root --password root --table bbs_product_from_hive --fields-terminated-by ',' --export-dir hdfs://hdspdemo008.hand-china.com:8020/warehouse/tablespace/managed/hive/hive_bbs_product_snappy/delta_0000001_0000001_0000</code></p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[常用的SQL优化操作]]></title>
+        <id>https://sangcaiying.github.io/post/chang-yong-de-sql-you-hua-cao-zuo/</id>
+        <link href="https://sangcaiying.github.io/post/chang-yong-de-sql-you-hua-cao-zuo/">
+        </link>
+        <updated>2020-08-27T11:01:37.000Z</updated>
+        <content type="html"><![CDATA[<p>1、使用Oracle的instr函数与索引配合提高模糊查询的效率</p>
+<p>一般来说，在Oracle数据库中，我们对tb表的name字段进行模糊查询会采用下面两种方式：<br>
+<code>select * from tb where name like '%XX%';</code><br>
+<code>select * from tb where instr(name,'XX')&gt;0;</code></p>
+<p>若是在name字段上没有加索引，两者效率差不多，基本没有区别。</p>
+<p>为提高效率，我们在name字段上可以加上非唯一性索引：<br>
+<code>create index idx_tb_name on tb(name);</code></p>
+<p>这样，再使用</p>
+<p><code>select * from tb where instr(name,'XX')&gt;0;</code></p>
+<p>这样的语句查询，效率可以提高不少，表数据量越大时两者差别越大。但也要顾及到name字段加上索引后DML语句会使索引数据重新排序的影响。</p>
+<p>2、用TRUNCATE替代DELETE</p>
+<p>当删除表中的记录时,在通常情况下, 回滚段(rollback segments ) 用来存放可以被恢复的信息。如果你没有COMMIT事务,ORACLE会将数据恢复到删除之前的状态(准确地说是恢复到执行删除命令之前的状况) 而当运用TRUNCATE时, 回滚段不再存放任何可被恢复的信息.当命令运行后,数据不能被恢复.因此很少的资源被调用,执行时间也会很短.</p>
+<p>3、尽量多使用COMMIT</p>
+<p>只要有可能,在程序中尽量多使用COMMIT, 这样程序的性能得到提高,需求也会因为COMMIT所释放的资源而减少。COMMIT所释放的资源有下列几种:</p>
+<p>①回滚段上用于恢复数据的信息.</p>
+<p>②被程序语句获得的锁</p>
+<p>③ redo log buffer 中的空间</p>
+<p>④ORACLE为管理上述3种资源中的内部花费</p>
+<p>4、用Where子句替换HAVING子句</p>
+<p>避免使用HAVING子句, HAVING 只会在检索出所有记录之后才对结果集进行过滤。这个处理需要排序,总计等操作。 如果能通过WHERE子句限制记录的数目,那就能减少这方面的开销. (非oracle中)on、where、having这三个都可以加条件的子句中，on是最先执行，where次之，having最后，因为on是先把不符合条件的记录过滤后才进行统计，它就可以减少中间运算要处理的数据，按理说应该速度是最快的，where也应该比having快点的，因为它过滤数据后才进行sum，在两个表联接时才用on的，所以在一个表的时候，就剩下where跟having比较了。在这单表查询统计的情况下，如果要过滤的条件没有涉及到要计算字段，那它们的结果是一样的，只是where可以使用rushmore技术，而having就不能，在速度上后者要慢如果要涉及到计算的字段，就表示在没计算之前，这个字段的值是不确定的，根据上篇写的工作流程，where的作用时间是在计算之前就完成的，而having就是在计算后才起作用的，所以在这种情况下，两者的结果会不同。在多表联接查询时，on比where更早起作用。系统首先根据各个表之间的联接条件，把多个表合成一个临时表后，再由where进行过滤，然后再计算，计算完后再由having进行过滤。由此可见，要想过滤条件起到正确的作用，首先要明白这个条件应该在什么时候起作用，然后再决定放在那里</p>
+<p>5、使用表的别名(Alias)</p>
+<p>当在SQL语句中连接多个表时, 请使用表的别名并把别名前缀于每个Column上.这样一来,就可以减少解析的时间并减少那些由Column歧义引起的语法错误.</p>
+<p>6、用EXISTS替代IN、用NOT EXISTS替代NOT IN</p>
+<p>在许多基于基础表的查询中,为了满足一个条件,往往需要对另一个表进行联接.在这种情况下, 使用EXISTS(或NOT EXISTS)通常将提高查询的效率. 在子查询中,NOT IN子句将执行一个内部的排序和合并. 无论在哪种情况下,NOT IN都是最低效的 (因为它对子查询中的表执行了一个全表遍历). 为了避免使用NOT IN ,我们可以把它改写成外连接(Outer Joins)或NOT EXISTS.</p>
+<p>例子：</p>
+<p>//(高效)</p>
+<p><code>SELECT * FROM EMP (基础表)</code></p>
+<p><code>WHERE EMPNO &gt; 0 AND EXISTS (SELECT &quot;X&quot; FROM DEPT WHERE DEPT.DEPTNO = EMP.DEPTNO AND LOC = &quot;MELB&quot;)</code></p>
+<p>//(低效)</p>
+<p><code>SELECT * FROM EMP (基础表)</code></p>
+<p>7、用索引提高效率</p>
+<p>索引是表的一个概念部分,用来提高检索数据的效率，ORACLE使用了一个复杂的自平衡B-tree结构. 通常,通过索引查询数据比全表扫描要快. 当ORACLE找出执行查询和Update语句的最佳路径时, ORACLE优化器将使用索引. 同样在联结多个表时使用索引也可以提高效率. 另一个使用索引的好处是,它提供了主键(primary key)的唯一性验证.。那些LONG或LONG RAW数据类型, 你可以索引几乎所有的列. 通常, 在大型表中使用索引特别有效. 当然,你也会发现, 在扫描小表时,使用索引同样能提高效率. 虽然使用索引能得到查询效率的提高,但是我们也必须注意到它的代价. 索引需要空间来存储,也需要定期维护, 每当有记录在表中增减或索引列被修改时, 索引本身也会被修改. 这意味着每条记录的INSERT , DELETE , UPDATE将为此多付出4 , 5 次的磁盘I/O . 因为索引需要额外的存储空间和处理,那些不必要的索引反而会使查询反应时间变慢.。定期的重构索引是有必要的.：</p>
+<p><code>ALTER INDEX REBUILD</code></p>
+<p>8、用EXISTS替换DISTINCT</p>
+<p>当提交一个包含一对多表信息(比如部门表和雇员表)的查询时,避免在SELECT子句中使用DISTINCT. 一般可以考虑用EXIST替换, EXISTS 使查询更为迅速,因为RDBMS核心模块将在子查询的条件一旦满足后,立刻返回结果. 例子：</p>
+<p>//(低效):</p>
+<p><code>SELECT DISTINCT DEPT_NO,DEPT_NAME</code></p>
+<p><code>FROM DEPT D , EMP E</code></p>
+<p><code>WHERE D.DEPT_NO = E.DEPT_NO</code></p>
+<p>//(高效):</p>
+<p><code>SELECT DEPT_NO,DEPT_NAME</code></p>
+<p><code>FROM DEPT D</code></p>
+<p><code>WHERE EXISTS ( SELECT &quot;X&quot;</code></p>
+<p>​       <code>FROM EMP E WHERE E.DEPT_NO = D.DEPT_NO);</code></p>
+<p>9、sql语句用大写的</p>
+<p>因为oracle总是先解析sql语句，把小写的字母转换成大写的再执行</p>
+<p>10、在java代码中尽量少用连接符&quot;+&quot;连接字符串!</p>
+<p>11、避免在索引列上使用NOT</p>
+<p>通常，我们要避免在索引列上使用NOT, NOT会产生在和在索引列上使用函数相同的影响. 当ORACLE&quot;遇到&quot;NOT,他就会停止使用索引转而执行全表扫描.</p>
+<p>12、用&gt;=替代&gt;</p>
+<p>//高效:</p>
+<p><code>SELECT * FROM EMP WHERE DEPTNO &gt;=4</code></p>
+<p>//低效:</p>
+<p>​       <code>SELECT * FROM EMP WHERE DEPTNO &gt;3</code></p>
+<p>两者的区别在于, 前者DBMS将直接跳到第一个DEPT等于4的记录而后者将首先定位到DEPTNO=3的记录并且向前扫描到第一个DEPT大于3的记录.</p>
+<p>13、用UNION替换OR (适用于索引列)</p>
+<p>通常情况下, 用UNION替换WHERE子句中的OR将会起到较好的效果. 对索引列使用OR将造成全表扫描. 注意, 以上规则只针对多个索引列有效. 如果有column没有被索引, 查询效率可能会因为你没有选择OR而降低. 在下面的例子中, LOC_ID 和REGION上都建有索引.</p>
+<p>//高效:</p>
+<p><code>SELECT LOC_ID , LOC_DESC , REGION</code></p>
+<p><code>FROM LOCATION</code></p>
+<p><code>WHERE LOC_ID = 10</code></p>
+<p><code>UNION</code></p>
+<p><code>SELECT LOC_ID , LOC_DESC , REGION</code></p>
+<p><code>FROM LOCATION</code></p>
+<p><code>WHERE REGION = &quot;MELBOURNE&quot;</code></p>
+<p>//低效:</p>
+<p><code>SELECT LOC_ID , LOC_DESC , REGION</code></p>
+<p><code>FROM LOCATION</code></p>
+<p>​       <code>WHERE LOC_ID = 10 OR REGION = &quot;MELBOURNE&quot;</code></p>
+<p>如果你坚持要用OR, 那就需要返回记录最少的索引列写在最前面.</p>
+<p>14、用IN来替换OR</p>
+<p>这是一条简单易记的规则，但是实际的执行效果还须检验，在ORACLE8i下，两者的执行路径似乎是相同的.</p>
+<p>//低效:</p>
+<p><code>SELECT…. FROM LOCATION WHERE LOC_ID = 10 OR LOC_ID = 20 OR LOC_ID = 30</code></p>
+<p>//高效:</p>
+<p>​        <code>SELECT… FROM LOCATION WHERE LOC_IN IN (10,20,30);</code></p>
+<p>15、避免在索引列上使用IS NULL和IS NOT NULL</p>
+<p>避免在索引中使用任何可以为空的列，ORACLE将无法使用该索引.对于单列索引，如果列包含空值，索引中将不存在此记录. 对于复合索引，如果每个列都为空，索引中同样不存在此记录.　如果至少有一个列不为空，则记录存在于索引中.举例: 如果唯一性索引建立在表的A列和B列上, 并且表中存在一条记录的A,B值为(123,null) , ORACLE将不接受下一条具有相同A,B值(123,null)的记录(插入). 然而如果所有的索引列都为空，ORACLE将认为整个键值为空而空不等于空. 因此你可以插入1000 条具有相同键值的记录,当然它们都是空! 因为空值不存在于索引列中,所以WHERE子句中对索引列进行空值比较将使ORACLE停用该索引.</p>
+<p>//低效: (索引失效)</p>
+<p><code>SELECT … FROM DEPARTMENT WHERE DEPT_CODE IS NOT NULL;</code></p>
+<p>//高效: (索引有效)</p>
+<p>​      <code>SELECT … FROM DEPARTMENT WHERE DEPT_CODE &gt;=0;</code></p>
+<p>16、用WHERE替代ORDER BY</p>
+<p>ORDER BY 子句只在两种严格的条件下使用索引;ORDER BY中所有的列必须包含在相同的索引中并保持在索引中的排列顺序.;ORDER BY中所有的列必须定义为非空. WHERE子句使用的索引和ORDER BY子句中所使用的索引不能并列.</p>
+<p>例如:</p>
+<p>//表DEPT包含以下列:</p>
+<p><code>DEPT_CODE PK NOT NULL</code></p>
+<p><code>DEPT_DESC NOT NULL</code></p>
+<p><code>DEPT_TYPE NULL</code></p>
+<p>//低效: (索引不被使用)</p>
+<p><code>SELECT DEPT_CODE FROM DEPT ORDER BY DEPT_TYPE</code></p>
+<p>//高效: (使用索引)</p>
+<p>​       <code>SELECT DEPT_CODE FROM DEPT WHERE DEPT_TYPE &gt; 0</code></p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[大数据背景以及Hdp生态圈组件介绍]]></title>
+        <id>https://sangcaiying.github.io/post/da-shu-ju-bei-jing-yi-ji-hdp-sheng-tai-quan-zu-jian-jie-shao/</id>
+        <link href="https://sangcaiying.github.io/post/da-shu-ju-bei-jing-yi-ji-hdp-sheng-tai-quan-zu-jian-jie-shao/">
+        </link>
+        <updated>2020-08-27T11:00:23.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="一大数据应用场景">一.大数据应用场景</h3>
+<ul>
+<li>物流仓储：大数据分析系统助力商家精细化运营、提升销量、节约成本</li>
+<li>零售：分析用户消费习惯，为用户购买商品提供方便，从而提升商品销量</li>
+<li>旅游：结合大数据能力与旅游行业需求，共建旅游行业智慧管理、智慧服务、智慧营销</li>
+<li>商品推荐：根据用户消费喜好推荐商品</li>
+<li>保险：数据挖掘、风险预测，助力行业精准营销、细化定价</li>
+<li>金融：多维度体现用户特征，帮助机构推荐优质客户，规避风险</li>
+<li>房产：助力精准投策，选出更合适的地，建造更合适的楼，卖给更合适的人</li>
+</ul>
+<h3 id="二关于hdp">二.关于Hdp</h3>
+<p>它由Apache基金会开发的分布式系统基础架构，主要解决海量数据的存储和海量数据的分析计算问题。</p>
+<h4 id="hdp的优势">Hdp的优势</h4>
+<ul>
+<li>高可靠性：Hdp底层维护多个数据副本，即使Hdp某个计算元素或存储出现故障，也不会丢失数据</li>
+<li>高扩展性：在集群间分配任务数据，可方便的扩展数以千计的节点</li>
+<li>高效性：在MapReduce的思想下，Hadoop并行工作以加快任务处理速度</li>
+<li>高容错性：能自动将失败的任务重新分配</li>
+</ul>
+<h3 id="三hdp生态圈组件">三.Hdp生态圈组件</h3>
+<figure data-type="image" tabindex="1"><img src="C:%5CUsers%5C26632%5CPictures%5C%E5%A4%A7%E6%95%B0%E6%8D%AE%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84.png" alt="大数据技术架构" loading="lazy"></figure>
+<h4 id="1hdfs">1.HDFS</h4>
+<p>HDFS（Hadoop Distributed File System）是hadoop项目的核心子项目，是分布式计算中数据存储管理的基础。是基于流数据模式访问和处理超大文件的需求而开发的， 可以运行于廉价的商用服务器上。</p>
+<p>HDFS是开源的，存储着Hadoop应用将要处理的数据，类似于普通的Unix和linux文件系统，不同的是它是实现了google的GFS文件系统的思想，是适用于大规模分布式数据处理相关应用的、可扩展的分布式文件系统。</p>
+<ul>
+<li>
+<p><strong>HDFS主要组件</strong></p>
+<p>NameNode：存储文件的元数据，如文件名、文件结构目录、文件属性以及每个文件的块列表和块所在的DataNode</p>
+<p>DataNode：在本地文件系统存储文件块数据，以及块数据的校验和</p>
+<p>Secondary NameNode：用来监控HDFS状态的辅助后台程序，每个一段时间获取HDFS元数据的快照</p>
+</li>
+<li>
+<p><strong>HDFS优点</strong></p>
+<p>处理超大文件</p>
+<p>流式数据访问</p>
+<p>运行于廉价的商用集群上</p>
+</li>
+<li>
+<p><strong>HDFS缺点</strong></p>
+<p>不适合低延迟的数据访问</p>
+<p>无法高效存储大量小文件</p>
+<p>不支持多用户写入及随意修改</p>
+</li>
+</ul>
+<h4 id="2mapreduce">2.MapReduce</h4>
+<p>MapReduce是一个分布式运行程序的编程框架，它的核心功能是将用户编写的业务逻辑代码和自带默认组件整合成一个完整的分布式运行程序，并运行在一个HDP集群上。</p>
+<ul>
+<li>
+<p><strong>MapReduce核心编程思想</strong></p>
+<p>MapReduce编程模型只能包含一个Map阶段和一个Reduce阶段，若业务逻辑非常复杂，就只能多个MapReduce程序，串行运行。</p>
+<p>第一个阶段MapTask并发实例，完全并行运行，互不相干。</p>
+<p>第二个阶段的ReduceTask并发实例也互不相干，但是数据依赖于上一个阶段的所有MapTask并发实例的输出。</p>
+</li>
+<li>
+<p><strong>MapReduce进程</strong></p>
+<p>一个完整的MapReduce程序在分布式运行时有三类实例进程：</p>
+<p>MrAppMaster：负责整个程序的过程调度及状态协调</p>
+<p>MapTask：负责Map阶段的整个数据处理流程</p>
+<p>ReduceTask：负责Reduce阶段的整个处理流程</p>
+</li>
+<li>
+<p><strong>优点</strong></p>
+<p>易于编程：简单的实现一些接口，就可以完成一个分布式程序</p>
+<p>良好扩展性：可以通过简单的加机器扩展它的计算能力</p>
+<p>高容错性：若其中一台机器宕机，Hadoop内部会自动将任务转移到另一台机器上</p>
+<p>适合PB级别海量数据离线处理：上千台集群并发工作，提供数据处理能力</p>
+</li>
+<li>
+<p><strong>缺点</strong></p>
+<p>不擅长实时计算：无法在毫秒或秒级别内返回结果</p>
+<p>不擅长流式计算：MapReduce自身的设计特点决定了数据源必须时静态的，而流式计算的输入数据时动态的</p>
+<p>不擅长DAG(有向图)计算：多个应用程序存在依赖关系，后一个应用程序的输入为前一个的输出。这种情况下，每个MapReduce的输出结果都会写入磁盘，会造成大量的磁盘IO，导致性能非常底下。</p>
+</li>
+</ul>
+<h4 id="3yarn">3.Yarn</h4>
+<p>Yarn是HDP集群的资源管理系统，主要组件如下：</p>
+<p>ResourceManager：处理客户端请求，监控NodeManager，启动或监控ApplicationMaster，分配调度资源</p>
+<p>NodeManager：管理单个节点的资源，处理来自ResourceManager和AplicationMaster的命令</p>
+<p>ApplicationMaster：负责数据的切分，为应用程序申请资源并分配给内部任务，任务的监控与容错</p>
+<p>Container：它是YARN中的资源抽象，封装了某个节点上的多维度资源，如内存、CPU、磁盘、网络等</p>
+<p>4.Hive</p>
+<p>5.HBase</p>
+<p>6.Impala</p>
+<p>7.Sqoop</p>
+<h1 id="用于换行binsqoop-import">\ 用于换行bin/sqoop import \</h1>
+<p>--connect jdbc:mysql://127.0.0.1:3306/mysql \　　#连接数据库<br>
+--username root \　　#用户名<br>
+--password root \　　#密码<br>
+--query 'select id, product_name, product_code from bbs_product  ' \　　#选取表的字段信息<br>
+--target-dir /data/base \　　#上传到Hdfs的目录<br>
+--delete-target-dir \　　#如果指定文件目录存在则先删除掉<br>
+--num-mappers 1 \　　#使用1个map并行任务<br>
+--compress \　　#启动压缩<br>
+--compression-codec org.apache.hadoop.io.compress.SnappyCodec \　　#指定hadoop的codec方式 默认为gzip<br>
+--direct \　　#使用直接导入方式，优化导入速度<br>
+--fields-terminated-by '\t'　　#字段之间通过空格分隔</p>
+<p>bin/sqoop import \</p>
+<p>--connect jdbc:mysql://127.0.0.1:3306/mysql <br>
+--username root <br>
+--password root <br>
+--query 'select id, product_name, product_code from bbs_product  ' <br>
+--target-dir /data/base <br>
+--delete-target-dir <br>
+--num-mappers 1 <br>
+--compress <br>
+--compression-codec org.apache.hadoop.io.compress.SnappyCodec <br>
+--direct \</p>
+<p>--fields-terminated-by '\t'</p>
+<p>8.Flume</p>
+<p>9.Kafka</p>
+<p>10.ZooKeeper</p>
+<p>11.Pig</p>
+<p>12.Spark</p>
+<p>13.Storm</p>
+<p>14.Flink</p>
+<p>15.Tez</p>
+<p>16.Phoenix</p>
+<p>17.Kylin</p>
+<p>18.ES</p>
+<p>19.Thrift</p>
+<p>20.Azkaban</p>
+<p>21.Ambari</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[数据建模相关概念及方法论]]></title>
+        <id>https://sangcaiying.github.io/post/shu-ju-jian-mo-xiang-guan-gai-nian-ji-fang-fa-lun/</id>
+        <link href="https://sangcaiying.github.io/post/shu-ju-jian-mo-xiang-guan-gai-nian-ji-fang-fa-lun/">
+        </link>
+        <updated>2020-08-18T12:59:47.000Z</updated>
+        <summary type="html"><![CDATA[<p>数据建模，指标，数仓，数据管理</p>
 ]]></summary>
-        <content type="html"><![CDATA[<p>👏  欢迎使用 <strong>Gridea</strong> ！<br>
-✍️  <strong>Gridea</strong> 一个静态博客写作客户端。你可以用它来记录你的生活、心情、知识、笔记、创意... ...</p>
+        <content type="html"><![CDATA[<p>数据建模，指标，数仓，数据管理</p>
 <!-- more -->
-<p><a href="https://github.com/getgridea/gridea">Github</a><br>
-<a href="https://gridea.dev/">Gridea 主页</a><br>
-<a href="http://fehey.com/">示例网站</a></p>
-<h2 id="特性">特性👇</h2>
-<p>📝  你可以使用最酷的 <strong>Markdown</strong> 语法，进行快速创作</p>
-<p>🌉  你可以给文章配上精美的封面图和在文章任意位置插入图片</p>
-<p>🏷️  你可以对文章进行标签分组</p>
-<p>📋  你可以自定义菜单，甚至可以创建外部链接菜单</p>
-<p>💻  你可以在 <strong>Windows</strong>，<strong>MacOS</strong> 或 <strong>Linux</strong> 设备上使用此客户端</p>
-<p>🌎  你可以使用 <strong>𝖦𝗂𝗍𝗁𝗎𝖻 𝖯𝖺𝗀𝖾𝗌</strong> 或 <strong>Coding Pages</strong> 向世界展示，未来将支持更多平台</p>
-<p>💬  你可以进行简单的配置，接入 <a href="https://github.com/gitalk/gitalk">Gitalk</a> 或 <a href="https://github.com/SukkaW/DisqusJS">DisqusJS</a> 评论系统</p>
-<p>🇬🇧  你可以使用<strong>中文简体</strong>或<strong>英语</strong></p>
-<p>🌁  你可以任意使用应用内默认主题或任意第三方主题，强大的主题自定义能力</p>
-<p>🖥  你可以自定义源文件夹，利用 OneDrive、百度网盘、iCloud、Dropbox 等进行多设备同步</p>
-<p>🌱 当然 <strong>Gridea</strong> 还很年轻，有很多不足，但请相信，它会不停向前 🏃</p>
-<p>未来，它一定会成为你离不开的伙伴</p>
-<p>尽情发挥你的才华吧！</p>
-<p>😘 Enjoy~</p>
+<p>1.原子指标：不加任何修饰词的指标就是原子指标，也叫度量，例如订单量、用户数等等。</p>
+<p>2.派生指标：在原子指标上进行加减乘除或者修饰词的限定等等都是派生指标</p>
+<p>派生指标分为3类：事务型指标、存量型指标和复合型指标</p>
+<p>事务型指标：是指对业务活动进行衡量的指标，例如：新增注册用户数、订单支付金额等<br>
+存量型指标：是指对实体对象（如商品、会员）某些状态的统计，例如：商品总数、注册会员总数<br>
+复合型指标：是在事务型指标和存量型指标的基础上复合而成的，例如：浏览UV-下单买家数转化率</p>
+<p>3.维度：维度是度量的环境，用来反映业务的一类属性，这类属性的集合构成一个维度，也可以称为实体对象。维度属于一个数据域，如地理维度（其中包括国家、地区、省市等）、时间维度（其中包括年、季、月、周、日等级别内容）。</p>
+<p>4.数仓分层</p>
+<table>
+<thead>
+<tr>
+<th>1</th>
+<th>DIM</th>
+<th>一致性维度表</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2</td>
+<td>STG</td>
+<td>临时数据层：一般会把从数据源拿到的数据文件直接保存起来，一般存放3-5天，以防数据处理出现问题时可以Replay</td>
+</tr>
+<tr>
+<td>3</td>
+<td>ODS</td>
+<td>全量数据层：这层的作用是[<strong>把各个系统的数据集中起来</strong>]，并且+数仓的timestamp[<strong>保留数据的多版本</strong>]，可以反映历史变化 数据粒度和源数据保持一致</td>
+</tr>
+<tr>
+<td>4</td>
+<td>DWD</td>
+<td>数仓明细层：对ODS层数据[<strong>进行Format标准化处理</strong>]（比如日期格式，小数点精度......） 并且[<strong>只保留数据的当前状态</strong>]</td>
+</tr>
+<tr>
+<td>5</td>
+<td>DWS</td>
+<td>数仓汇总层：按照 topic 对数据进行维度建模 [<strong>可以是row级别的聚合</strong>] [<strong>也可以是column级别的聚合</strong>]</td>
+</tr>
+<tr>
+<td>6</td>
+<td>DM</td>
+<td>数据集市层：可以是一些宽表，是根据DW层数据按照各种维度或多种维度组合把需要查询的一些事实字段进行汇总统计并作为单独的列进行存储</td>
+</tr>
+<tr>
+<td>7</td>
+<td>ADS</td>
+<td>应用数据层：针对不同部门，对数据有各自特殊的专有的统计需求，这层针对各自情况 定制化输出数据。(刚开始可以先不建立这一层次，随着数据需求逐渐稳定了 ，把公用的数据下沉到DM层。ADS负责定制化的数</td>
+</tr>
+</tbody>
+</table>
+<p>5.元数据：描述数据的数据，对数据及信息资源的描述性信息；或者说是用于提供某种资源的有关信息的结构数据。</p>
+<p>由于元数据也是数据，因此可以用类似数据的方法在数据库中进行存储和获取。如果提供数据元的组织同时提供描述数据元的元数据，将会使数据元的使用变得准确而高效。用户在使用数据时可以首先查看其元数据以便能够获取自己所需的信息。</p>
+<p>在数据仓库领域中，元数据按用途分成技术元数据和业务元数据。首先，元数据能提供基于用户的信息，如记录数据项的业务描述信息的元数据能帮助用户使用数据。其次，元数据能支持系统对数据的管理和维护，如关于数据项存储方法的元数据能支持系统以最有效的方式访问数据。具体来说，在数据仓库系统中，元数据机制主要支持以下五类系统管理功能:</p>
+<p>（1）描述哪些数据在数据仓库中；</p>
+<p>（2）定义要进入数据仓库中的数据和从数据仓库中产生的数据；</p>
+<p>（3）记录根据业务事件发生而随之进行的数据抽取工作时间安排；</p>
+<p>（4）记录并检测系统数据一致性的要求和执行情况；</p>
+<p>（5）衡量数据质量。</p>
+<p>6.DAMA-国际数据管理协会</p>
+<p>它是一个全球性数据管理和业务专业志愿人士组成的非营利协会，致力于数据管理的研究和实践。</p>
+<figure data-type="image" tabindex="1"><img src="https://imgconvert.csdnimg.cn/aHR0cHM6Ly9tbWJpei5xcGljLmNuL21tYml6X3BuZy81b2xUMnVpYVdUNFM5QjVBbmtna215VjFVUzZNNUwyRzZYeVlYQXBNb0pTNUkzMmc4YVh0VDFEVDZxR2liQ0lqVXlUc2tvYTZhWHlyRnV1bXgya0x1dWhnLzY0MA?x-oss-process=image/format,png" alt="img" loading="lazy"></figure>
+<p>​                                                                                                          DAMA金字塔图</p>
+<p>金字塔描述了一个企业数据管理的4个阶段：</p>
+<p>第1阶段：组织购买包含数据库功能的应用程序。这意味着组织以此作为数据建模、设计、数据存储和数据安全的起点。要使系统在其数据环境中运行，还需要做数据集成和交互操作方面的工作。</p>
+<p>第2阶段：一旦他们开始使用应用程序，他们将发现数据质量方面的挑战。但获得更高质量的数据取决于可靠的元数据和一致的数据架构。它们说明了来自不同系统的数据是如何协同工作的。</p>
+<p>第3阶段：管理数据质量、元数据和架构需要严格地实践数据治理，为数据管理活动提供体系性支持。数据治理还支持战略计划的实施，如文档和内容管理、参考数据管理、主数据管理、数据仓库和商务智能，这些黄金金字塔中的高级应用都会得到充分地支持。</p>
+<p>第4阶段：该组织充分利用了良好管理数据的好处，并提高了其分析能力。让数据产生价值</p>
+<p>7.数据管理的9大核心原则</p>
+<ul>
+<li>数据是有独立属性的资产：数据是一种资产，但相比其他资产，其在管理方式的某些方面有很大差异。对比金融和实物资产，其中最明显的一个特点是数据资产在使用过程中不会产生消耗。</li>
+<li>数据价值能够并且应该通过经济术语来表达：将数据称为资产意味着它有价值。虽然有技术手段可以测量数据的数量和质量，但还未形成这样做的标准来衡量其价值。想要对其数据做出更好决策的组织应该开发一致的方法来量化该价值。他们还应该衡量低质量数据的成本和高质量数据的好处。</li>
+<li>管理数据意味着管理数据的质量：确保数据符合应用的要求是数据管理的首要目标。为了管理质量，组织必须确保他们了解利益相关者对质量的要求，并根据这些要求度量数据。</li>
+<li>管理数据需要元数据：管理任何资产都需要首先拥有该项资产的数据（员工人数，账户号码等）。用于管理和如何使用的数据都叫元数据。因为数据无法拿在手中或触摸到，要理解它是什么以及如何使用它，需要以元数据的形式定义这些知识。元数据源于与数据创建、处理和使用相关的一系列流程，包括架构、建模、管理、治理、数据质量管理、系统开发、IT和业务运营以及分析。</li>
+<li>管理数据需要计划：即便是小型组织也可能有复杂的技术和业务流程蓝图。数据在多个地方被创建，且因为使用需要在很多存储位置间移动。需要一些协调工作来保持最终结果的一致，需要从架构和流程的角度进行规划。</li>
+<li>管理数据是跨职能的工作：它需要一系列的技能和专业知识，因此单个团队无法管理组织的所有数据。数据管理需要技术能力、非技术技能以及协作能力。</li>
+<li>数据管理需要企业级视角：虽然数据管理存在很多本地应用程序，但它必须能够有效地被应用于整个企业。</li>
+<li>数据是流动的，数据管理必须不断发展演进，以跟上数据创建的方式、应用的方式和消费者的变化。</li>
+<li>数据管理是全生命周期的管理：数据是有生命周期的，因此数据管理需要管理它的生命周期。因为数据又将产生更多的数据，所以数据生命周期本身可能非常复杂。数据管理实践活动需要考虑数据的整个生命周期。</li>
+</ul>
+<p>8.数据管理需要注意的几个方面</p>
+<ul>
+<li>数据治理（Data Governance）：通过建立一个能够满足企业需求的数据决策体系，为数据管理提供指导和监督。这些权限和责任的建立应该考虑到组织的整体需求。</li>
+<li>数据架构（Data Architecture）：定义了与组织战略协调的管理数据资产的“蓝图”，指导基于组织的战略目标，指定符合战略需求的数据架构。</li>
+<li>数据建模和设计（Data Modeling and Design）：以数据模型（data model.）的精确形式，进行发现、分析、展示和沟通数据需求的过程。</li>
+<li>数据存储和操作（Data Storage and Operations）：以数据价值最大化为目标，包括存储数据的设计、实现和支持活动，以及在整个数据生命周期中，从计划到销毁的各种操作活动。</li>
+<li>数据安全（Ｄata Ｓecurity）：这一活动确保数据隐私和安全，数据的获得和使用必须要有安全的保障。审计日志追踪、留痕以及敏感数据的处理。</li>
+<li>数据集成和互操作（Data Integration and Interoperability）：包括与数据存储、应用程序和组织之间的数据移动和整合相关的过程。</li>
+<li>文档和内容管理（Document and Content Management）：用于管理非结构化媒体的数据和信息的生命周期过程，包括计划、实施和控制活动，尤其是指支持法律法规遵从性要求所需的文档。</li>
+<li>参考数据和主数据管理（Reference and Master Data Management）：包括核心共享数据的持续协调和维护，使关键业务实体的真实信息，以准确、及时和相关联的方式在各系统间得到一致使用。</li>
+<li>数据仓库和商务智能（Data Warehousing and Business Intelligence）：包括计划、实施和控制流程，来管理决策支持数据，并使知识工作者通过分析报告从数据中获得价值。</li>
+<li>元数据管理（Metadata Management）：包括规划、实施和控制活动，以便能够访问高质量的集成元数据，包括定义、模型、数据流和其他至关重要的信息（对理解数据及其创建、维护和访问系统有帮助）。</li>
+<li>数据质量管理（Data Quality Management）：包括规划和实施质量管理技术，以测量、评估和提高数据在组织内的适用性。</li>
+</ul>
+<p>9.数据建模</p>
+<p>整个数据仓库得建模过程中，我们需要经历一般四个过程：</p>
+<p>业务建模，生成业务模型，主要解决业务层面的分解和程序化。</p>
+<p>领域建模，生成领域模型，主要是对业务模型进行抽象处理，生成领域概念模型。//划分主题域</p>
+<p>//构建总线矩阵-业务过程所属的 数据域、业务过程与维度的关系</p>
+<p>逻辑建模，生成逻辑模型，主要是将领域模型的概念实体以及实体之间的关系进行数据库层次的逻辑化。</p>
+<p>物理建模，生成物理模型，主要解决，逻辑模型针对不同关系型数据库的物理化以及性能等一些具体的技术问题。</p>
+<p>其中，逻辑模型常见的有两种：星型模型和雪花模型</p>
+<p>星型模型：</p>
+<p><img src="https://sangcaiying.github.io/post-images/1597756024944.JPG" alt="" loading="lazy"><br>
+雪花模型：</p>
+<figure data-type="image" tabindex="2"><img src="https://sangcaiying.github.io/post-images/1597756042407.JPG" alt="" loading="lazy"></figure>
+<p>使用选择可以从一下4个方面来看：</p>
+<p><strong>数据优化</strong>：</p>
+<p>**雪花模型使用的是规范化数据，也就是说数据在数据库内部是组织好的，以便消除冗余，因此它能够有效地减少数据量。**通过引用完整性，其业务层级和维度都将存储在数据模型之中。</p>
+<p>**相比较而言，星形模型实用的是反规范化数据。**在星形模型中，维度直接指的是事实表，业务层级不会通过维度之间的参照完整性来部署。</p>
+<p><strong>业务模型</strong>：</p>
+<p>主键是一个单独的唯一键(数据属性)，为特殊数据所选择。在上面的例子中，Advertiser_ID就将是一个主键。外键(参考属性)仅仅是一个表中的字段，用来匹配其他维度表中的主键。在我们所引用的例子中，Advertiser_ID将是Account_dimension的一个外键。</p>
+<p>在雪花模型中，数据模型的业务层级是由一个不同维度表主键-外键的关系来代表的。而在星形模型中，所有必要的维度表在事实表中都只拥有外键。</p>
+<p><strong>性能</strong>：</p>
+<p>第三个区别在于性能的不同。**雪花模型在维度表、事实表之间的连接很多，因此性能方面会比较低。**举个例子，如果你想要知道Advertiser 的详细信息，雪花模型就会请求许多信息，比如Advertiser Name、ID以及那些广告主和客户表的地址需要连接起来，然后再与事实表连接。</p>
+<p>而星形模型的连接就少的多，在这个模型中，如果你需要上述信息，你只要将Advertiser的维度表和事实表连接即可。</p>
+<p><strong>ETL</strong>：</p>
+<p>雪花模型加载数据集市，因此ETL操作在设计上更加复杂，而且由于附属模型的限制，不能并行化。</p>
+<p>星形模型加载维度表，不需要再维度之间添加附属模型，因此ETL就相对简单，而且可以实现高度的并行化。</p>
+<p>10.总线矩阵</p>
+<p>我们通常把行为不同的业务处理过程，即事实，在交叉点上打上标记表示该业务处理过程与该维度相关这个矩阵也称为<strong>总线矩阵</strong>（<strong>Bus Matrix</strong>） 总线架构和一致性维度、一致性事实共同组成了Kimball的多维体系结构的基础。</p>
+<p>例如：</p>
+<table>
+<thead>
+<tr>
+<th>数据域/过程</th>
+<th>一致性维度</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>购买省份</td>
+<td>购买城市</td>
+<td>类目ID</td>
+<td>类目名称</td>
+<td>品牌ID</td>
+<td>品牌名称</td>
+<td>商品ID</td>
+<td>商品名称</td>
+<td>成交金额</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>交易</td>
+<td>下单</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>N</td>
+</tr>
+<tr>
+<td>支付</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>N</td>
+<td></td>
+</tr>
+<tr>
+<td>发货</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>N</td>
+<td></td>
+</tr>
+<tr>
+<td>确认收货</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>11.MaxCompute数据仓库构建的整体流程</p>
+<p>​     <img src="https://static-aliyun-doc.oss-cn-hangzhou.aliyuncs.com/assets/img/zh-CN/9725932951/p59651.png" alt="img" loading="lazy"></p>
+<ul>
+<li>业务板块：比数据域更高维度的业务划分方法，适用于庞大的业务系统。</li>
+<li>维度：维度建模由Ralph Kimball提出。维度模型主张从分析决策的需求出发构建模型，为分析需求服务。维度是度量的环境，是我们观察业务的角度，用来反映业务的一类属性 。属性的集合构成维度 ，也可以称为实体对象。例如， 在分析交易过程时，可以通过买家、卖家、商品和时间等维度描述交易发生的环境。</li>
+<li>属性（维度属性）：维度所包含的表示维度的列称为维度属性。维度属性是查询约束条件、分组和报表标签生成的基本来源，是数据易用性的关键。</li>
+<li>度量：在维度建模中，将度量称为事实 ，将环境描述为维度，维度是用于分析事实所需要的多样环境。度量通常为数值型数据，作为事实逻辑表的事实。</li>
+<li>指标：指标分为原子指标和派生指标。原子指标是基于某一业务事件行为下的度量，是业务定义中不可再拆分的指标，是具有明确业务含义的名词 ，体现明确的业务统计口径和计算逻辑，例如支付金额。
+<ul>
+<li>原子指标=业务过程+度量。</li>
+<li>派生指标=时间周期+修饰词+原子指标，派生指标可以理解为对原子指标业务统计范围的圈定。</li>
+</ul>
+</li>
+<li>业务限定：统计的业务范围，筛选出符合业务规则的记录（类似于SQL中<strong>where</strong>后的条件，不包括时间区间）。</li>
+<li>统计周期：统计的时间范围，例如最近一天，最近30天等（类似于SQL中<strong>where</strong>后的时间条件）。</li>
+<li>统计粒度：统计分析的对象或视角，定义数据需要汇总的程度，可理解为聚合运算时的分组条件（类似于SQL中的<strong>group by</strong>的对象）。粒度是维度的一个组合，指明您的统计范围。例如，某个指标是某个卖家在某个省份的成交额，则粒度就是卖家、地区这两个维度的组合。如果您需要统计全表的数据，则粒度为全表。在指定粒度时，您需要充分考虑到业务和维度的关系。统计粒度常作为派生指标的修饰词而存在。</li>
+</ul>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[linux安装openldap步骤]]></title>
+        <id>https://sangcaiying.github.io/post/linux-an-zhuang-openldap-bu-zou/</id>
+        <link href="https://sangcaiying.github.io/post/linux-an-zhuang-openldap-bu-zou/">
+        </link>
+        <updated>2020-08-04T10:00:17.000Z</updated>
+        <summary type="html"><![CDATA[<p>openldap,单点登录</p>
+]]></summary>
+        <content type="html"><![CDATA[<p>openldap,单点登录</p>
+<!-- more -->
+<p>目录</p>
+<p>虚拟机环境：centos 7</p>
+<p>一、环境准备</p>
+<p>1、关闭 selinux firewalld</p>
+<p>临时：<br>
+setenforce 0<br>
+永久：<br>
+vi /etc/sysconfig/selinux<br>
+SELINUX=enforcing 改为 SELINUX=disabled<br>
+重启服务reboot</p>
+<p>systemctl stop firewalld.service<br>
+systemctl disable firewalld.service<br>
+二、OPENLDAP服务搭建</p>
+<p>1、安装LDAP服务器和客户端，migrationtools工具包</p>
+<p>yum install -y openldap-servers openldap-clients migrationtools<br>
+2、设置openldap管理员密码</p>
+<p>slappasswd -s 123456<br>
+会返回加密的密码字符串，保存好这个字符串<br>
+{SSHA}YcUGpZBSZt3chctkPwr5WXgQhvugxcnv</p>
+<p>3、更改openldap配置</p>
+<h6 id="查看安装了哪些文件">查看安装了哪些文件</h6>
+<p>rpm -ql openldap<br>
+rpm -ql openldap-servers</p>
+<h6 id="修改配置">修改配置</h6>
+<p>​							<br>
+vim /etc/openldap/slapd.d/cn=config/olcDatabase={2}hdb.ldif</p>
+<p>找到olcSuffix，修改为你的dc，如:<br>
+dc=mypaas,dc=com</p>
+<p>下一行olcRootDN, 修改为你的用户名，如:<br>
+cn=Manager,dc=mypaas,dc=com</p>
+<p>在文件末尾添加一行，设置刚才的密码：<br>
+olcRootPW: {SSHA}YcUGpZBSZt3chctkPwr5WXgQhvugxcnv</p>
+<p>4、更改监控认证配置</p>
+<p>​							<br>
+vi /etc/openldap/slapd.d/cn=config/olcDatabase={1}monitor.ldif</p>
+<p>修改 olcAccess 中的dn.base=”cn=xxxxxxx”这行为刚才设置的用户名，如：<br>
+dn.base=”cn=Manager,dc=mypaas,dc=com”</p>
+<p>5、设置DB Cache</p>
+<p>​							<br>
+cp /usr/share/openldap-servers/DB_CONFIG.example /var/lib/ldap/DB_CONFIG<br>
+chown -R ldap:ldap /var/lib/ldap/</p>
+<p>6、测试配置文件</p>
+<p>​							<br>
+slaptest -u<br>
+末尾出现configfile testing successed 说明成功了</p>
+<p>7、启动OpenLDAP和并设置为开机启动</p>
+<p>​							<br>
+systemctl start slapd.service<br>
+systemctl enable slapd.service</p>
+<h1 id="查看运行状态">查看运行状态</h1>
+<p>systemctl status slapd.service<br>
+8、导入模板</p>
+<p>ls /etc/openldap/schema/*.ldif | xargs -I {} sudo ldapadd -Y EXTERNAL -H ldapi:/// -f {}</p>
+<p>三、安装Web管理服务</p>
+<p>1、 安装httpd服务器</p>
+<p>yum install httpd -y<br>
+2、修改配置文件httpd.conf</p>
+<p>vim /etc/httpd/conf/httpd.conf<br>
+找到AllowOverride一行,改掉整个<directory>,不然待会浏览器访问不了<br>
+<Directory /></p>
+<pre><code>Options Indexes FollowSymLinks
+
+AllowOverride None
+</code></pre>
+</Directory>
+3、启动服务，测试页面
+<p>systemctl start httpd.service<br>
+systemctl enable httpd.service<br>
+curl http://127.0.0.1/<br>
+4、安装phpldapadmin</p>
+<p>yum install phpldapadmin（如果找不到软件包，重新设置一下yum源）<br>
+yum localinstall http://rpms.famillecollet.com/enterprise/remi-release-7.rpm<br>
+5、修改配置文件</p>
+<p>vim /etc/phpldapadmin/config.php</p>
+<p>找到并取消下面几行的注释：<br>
+$servers-&gt;setValue(‘server’,’host’,’127.0.0.1’);</p>
+<p>$servers-&gt;setValue(‘server’,’port’,389);</p>
+<p>$servers-&gt;setValue(‘server’,’base’,array(‘dc=mypaas,dc=com’));<br>
+（array里加上openldap配置文件中设置的olcSuffix）</p>
+<p>$servers-&gt;setValue(‘login’,’auth_type’,’session’);</p>
+<p>$servers-&gt;setValue(‘login’,’attr’,’dn’);<br>
+把它的下一行注释掉</p>
+<p>#$servers-&gt;setValue(‘login’,’attr’,’uid’);</p>
+<p>6、修改访问配置文件，允许任意ip访问</p>
+<p>vim /etc/httpd/conf.d/phpldapadmin.conf</p>
+<p>改为下图所示</p>
+<h1 id=""></h1>
+<h1 id="web-based-tool-for-managing-ldap-servers">Web-based tool for managing LDAP servers</h1>
+<h1 id="-2"></h1>
+<p>Alias /phpldapadmin /usr/share/phpldapadmin/htdocs<br>
+Alias /ldapadmin /usr/share/phpldapadmin/htdocs</p>
+<p>&lt;Directory /usr/share/phpldapadmin/htdocs&gt;<br>
+Order Deny,Allow<br>
+Allow from all<br>
+</Directory></p>
+<p>7、创建基础目录</p>
+<p>1、在/etc/openldap目录下添加base.ldif文件</p>
+<p>cd /etc/openldap/<br>
+vim base.ldif<br>
+2、在文件中添加以下内容</p>
+<p>dn: dc=mypaas,dc=com<br>
+o: ldap<br>
+objectclass: dcObject<br>
+objectclass: organization</p>
+<p>8、重启httpd服务</p>
+<p>systemctl restart httpd.service</p>
+<p>9、访问web管理端</p>
+<p>访问 http://ip/phpldapadmin 登陆用户名：cn=Manager,dc=mypaas,dc=com  密码：123456</p>
+<p>这时候会发现界面没有根节点，创建根节点：<br>
+ldapadd  -f base.ldif  -x -D  cn=Manager,dc=DouBi,dc=Ren –W</p>
+<p>然后在界面点击刷新，就可以创建条目了</p>
+<p>然后可以创建组，创建对象，还可以添加属性</p>
+<p>三、HCS系统集成</p>
+<p>创建好用户之后，就可以在HCS系统中集成了，修改两处文件：<br>
+1.修改src/main/resources/spring目录下的文件standardSecurity.xml，文件54行左右内容如下：</p>
+<!--<beans:import resource="standardSecurity-LDAP.xml"/>-->
+<authentication-manager>
+<!--Ldap验证-->
+<!-- <authentication-provider ref="ldapAuthProvider" />-->
+<!--标准登录验证-->
+  <authentication-provider user-service-ref="customUserDetailsService">
+  <password-encoder ref="passwordManager"/>
+  </authentication-provider>
+</authentication-manager>
+<p>开启ldap验证 请把beans:import...也取消注释，注册相关bean。注释标准验证<br>
+有两处地方，1.hma/hap/src/main/resources/spring/standardSecurity.xml；2.config.properties文件中LDAP配置，后续发布环境 需配置profiles下面相应环境的配置文件</p>
+<p>2.修改 src/main/resources/config.properties 文件，将其中的LDAP部分根据实际情况修改：</p>
+<p>#LDAP<br>
+#LDAP服务器的URL 可以设置远程服务器　注意是ldap开头的url<br>
+ldap.server.url=ldap://localhost:389/<br>
+#登录LDAP服务器的用户凭证 根据实际服务器的配置修改<br>
+ldap.conn.userDn=cn=Manager,dc=hand,dc=com<br>
+ldap.conn.password=secret<br>
+#用户查询策略 在指定的目录下查询<br>
+ldap.user.search.base=dc=hand,dc=com<br>
+#匹配条件 默认匹配uid　<br>
+ldap.user.search.filter=(uid={0})</p>
+<p>至此LDAP验证已经开启，确保LDAP服务器正常运行，且用户表中有与LDAP指定目录相同的用户名，并且分配适当角色，则可以正常登陆</p>
+<p>经测试，只有LDAP和系统共有的用户才能登录成功，登录密码是LDAP上的密码</p>
+<p>所有，可以先不开启LDAP验证，创建用户并分配角色，然后开启验证，使用LDAP用户名密码即可正常登录。</p>
+<p>至此，结束。</p>
 ]]></content>
     </entry>
 </feed>

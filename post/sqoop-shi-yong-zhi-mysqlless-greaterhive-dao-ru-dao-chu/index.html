@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>sqoop使用之mysql&lt;-&gt;hive导入导出 | Daria&#39;s home</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://sangcaiying.github.io/favicon.ico?v=1598526185083">
+<link rel="stylesheet" href="https://sangcaiying.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="一.将mysql数据导入到hive
+1.sqoop测试连接数据库
+cd /usr/local/sqoop
+bin/sqoop list-databases -connect jdbc:mysql://172.23.16.77:3306/my..." />
+    <meta name="keywords" content="" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://sangcaiying.github.io">
+        <img src="https://sangcaiying.github.io/images/avatar.png?v=1598526185083" class="site-logo">
+        <h1 class="site-title">Daria&#39;s home</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      温故而知新
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://sangcaiying.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">sqoop使用之mysql&lt;-&gt;hive导入导出</h2>
+            <div class="post-date">2020-08-27</div>
+            
+            <div class="post-content" v-pre>
+              <h4 id="一将mysql数据导入到hive">一.将mysql数据导入到hive</h4>
+<h5 id="1sqoop测试连接数据库">1.sqoop测试连接数据库</h5>
+<p><code>cd /usr/local/sqoop</code></p>
+<p><code>bin/sqoop list-databases -connect jdbc:mysql://172.23.16.77:3306/mysql --username root --password root</code></p>
+<h4 id="2在hdfs上创建目录用于存放数据">2.在hdfs上创建目录，用于存放数据</h4>
+<p><code>hadoop fs -mkdir -p /data/base</code></p>
+<h4 id="3mysql导入hdfs">3.mysql导入hdfs</h4>
+<p><code>bin/sqoop import \</code><br>
+<code>--connect jdbc:mysql://172.23.16.77:3306/mysql \</code><br>
+<code>--username root \</code><br>
+<code>--password root \</code><br>
+<code>--query 'select id, product_name, product_code from bbs_product where $CONDITIONS limit 100' \</code><br>
+<code>--target-dir /data/base \</code><br>
+<code>--delete-target-dir \</code><br>
+<code>--num-mappers 1 \</code><br>
+<code>--compress \</code><br>
+<code>--compression-codec org.apache.hadoop.io.compress.SnappyCodec \</code><br>
+<code>--direct \</code><br>
+<code>--fields-terminated-by ','</code></p>
+<h4 id="4查看并展示目录内容">4.查看并展示目录内容</h4>
+<p><code>hadoop fs -ls -R /data/base</code></p>
+<p><code>hadoop fs -text /data/base/part-m-00000.snappy</code></p>
+<h4 id="5在hive下建表">5.在hive下建表</h4>
+<p><code>create table default.hive_bbs_product_snappy(</code><br>
+<code>id int,</code><br>
+<code>product_name string,</code><br>
+<code>product_code string</code><br>
+<code>)</code><br>
+<code>ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' ;</code></p>
+<h4 id="6从hdfs导入hive">6.从hdfs导入hive</h4>
+<p><code>load data inpath '/data/base/part-m-00000.snappy' into table default.hive_bbs_product_snappy;</code></p>
+<p>遇到错误：</p>
+<h4 id="semanticexception-unable-to-load-data-to-destination-table-error-the-file-that-you-are-trying-to-load-does-not-match-the-file-format-of-the-destination-table错误">SemanticException Unable to load data to destination table. Error: The file that you are trying to load does not match the file format of the destination table.错误</h4>
+<p>解决办法：</p>
+<p>mysql导入hdfs存储为textfile：</p>
+<p><code>bin/sqoop import \</code><br>
+<code>--connect jdbc:mysql://172.23.16.77:3306/mysql \</code><br>
+<code>--username root \</code><br>
+<code>--password root \</code><br>
+<code>--query 'select id, product_name, product_code from bbs_product where $CONDITIONS limit 100' \</code><br>
+<code>--target-dir /data/base \</code><br>
+<code>--delete-target-dir \</code><br>
+<code>--num-mappers 1 \</code><br>
+<code>--as-textfile</code><br>
+<code>--direct \</code><br>
+<code>--fields-terminated-by ','</code></p>
+<p>在hive建表存储为文本格式：</p>
+<p><code>create table hive_bbs_test(id int,product_name string,product_code string) row format delimited fields terminated by ',' stored as textfile ;</code></p>
+<p>加载数据：</p>
+<p><code>load data inpath '/data/base/part-m-00000' into table default.hive_bbs_test;</code></p>
+<p>插入目标表：</p>
+<p><code>insert into default.hive_bbs_product_snappy select * from default.hive_bbs_test;</code></p>
+<h3 id="二从hive导入mysql">二.从HIVE导入mysql</h3>
+<h4 id="1运行hive命令查询hive表存储位置">1.运行hive命令，查询hive表存储位置</h4>
+<p><code>describe extended hive_bbs_test;</code></p>
+<h4 id="2在mysql创建表">2.在mysql创建表</h4>
+<h4 id="3执行sqoop命令">3.执行sqoop命令</h4>
+<pre><code>sqoop export --connect &quot;jdbc:mysql://172.23.16.77:3306/mysql?useUnicode=true&amp;characterEncoding=utf-8&quot; --username root --password root --table bbs_product_from_hive --fields-terminated-by ',' --export-dir hdfs://hdspdemo008.hand-china.com:8020/warehouse/tablespace/managed/hive/hive_bbs_product_snappy/delta_0000001_0000001_0000
+</code></pre>
+<h3 id="三未解决问题">三.未解决问题</h3>
+<h4 id="1直接执行sqoop从mysql到hive的命令会报错">1.直接执行sqoop从mysql到hive的命令，会报错</h4>
+<p>命令:</p>
+<p><code>bin/sqoop import \</code><br>
+<code>--connect jdbc:mysql://172.23.16.77:3306/demo \</code><br>
+<code>--username root \</code><br>
+<code>--password root \</code><br>
+<code>--table movies \</code><br>
+<code>--fields-terminated-by ',' \</code><br>
+<code>--delete-target-dir \</code><br>
+<code>--num-mappers 1 \</code><br>
+<code>--hive-import \</code><br>
+<code>--hive-database default \</code><br>
+<code>--hive-table hive_movies_snappy</code></p>
+<p>报错：</p>
+<figure data-type="image" tabindex="1"><img src="C:%5CUsers%5CSangNi%5CAppData%5CRoaming%5CTypora%5Ctypora-user-images%5Cimage-20200811130147497.png" alt="image-20200811130147497" loading="lazy"></figure>
+<h4 id="2sqoop从hive导入mysql会出现乱码且数据行数不一致">2.sqoop从hive导入mysql，会出现乱码且数据行数不一致</h4>
+<p>导入定义字符集后并没有解决：</p>
+<p><code>sqoop export --connect jdbc:mysql://172.23.16.77:3306/mysql?useUnicode=true&amp;characterEncoding=utf-8 --username root --password root --table bbs_product_from_hive --fields-terminated-by ',' --export-dir hdfs://hdspdemo008.hand-china.com:8020/warehouse/tablespace/managed/hive/hive_bbs_product_snappy/delta_0000001_0000001_0000</code></p>
+
+            </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://sangcaiying.github.io/post/chang-yong-de-sql-you-hua-cao-zuo/">
+                  <h3 class="post-title">
+                    常用的SQL优化操作
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>
